@@ -6,7 +6,13 @@ This repository contains a list of of HTTP user-agents used by robots, crawlers,
 * Go package: <https://pkg.go.dev/github.com/monperrus/crawler-user-agents>
 * PyPi package: <https://pypi.org/project/crawler-user-agents/>
 
-Each `pattern` is a regular expression. It should work out-of-the-box wih your favorite regex library:
+Each `pattern` is a regular expression. It should work out-of-the-box wih your favorite regex library.
+
+## Sponsor
+
+💼 **Using crawler-user-agents in a commercial product?** This package is free to use, but it takes real time to maintain and expand. If it's providing value (and it probably is), please consider [sponsoring at the commercial tier](https://github.com/sponsors/monperrus?frequency=recurring).
+
+It keeps the project alive and actively maintained. Your company can afford it. 🙏
 
 ## Install
 
@@ -41,9 +47,23 @@ Then:
 
 ```python
 import crawleruseragents
-if crawleruseragents.is_crawler("googlebot/"):
+if crawleruseragents.is_crawler("Googlebot/"):
    # do something
 ```
+
+or:
+
+```python
+import crawleruseragents
+indices = crawleruseragents.matching_crawlers("bingbot/2.0")
+print("crawlers' indices:", indices)
+print(
+    "crawler's URL:",
+    crawleruseragents.CRAWLER_USER_AGENTS_DATA[indices[0]]["url"]
+)
+```
+
+Note that `matching_crawlers` is much slower than `is_crawler`, if the given User-Agent does indeed match any crawlers.
 
 ### Go
 
@@ -70,7 +90,7 @@ func main() {
 
 	indices := agents.MatchingCrawlers(userAgent)
 	fmt.Println("crawlers' indices:", indices)
-	fmt.Println("crawler' URL:", agents.Crawlers[indices[0]].URL)
+	fmt.Println("crawler's URL:", agents.Crawlers[indices[0]].URL)
 }
 ```
 
@@ -99,7 +119,8 @@ Example:
       "pattern": "rogerbot",
       "addition_date": "2014/02/28",
       "url": "http://moz.com/help/pro/what-is-rogerbot-",
-      "instances" : ["rogerbot/2.3 example UA"]
+      "instances" : ["rogerbot/2.3 example UA"],
+      "tags": ["seo"]
     }
 
 ## License

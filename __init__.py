@@ -1,6 +1,42 @@
 import re
 import json
+from functools import cached_property
 from pathlib import Path
+
+
+CHUNK_SIZE = 25
+
+
+class CrawlerPatterns:
+    def __init__(self):
+        pass
+
+    @cached_property
+    def case_insensitive(self):
+        return re.compile(
+            "|".join(i["pattern"] for i in CRAWLER_USER_AGENTS_DATA),
+            re.IGNORECASE
+        )
+
+    @cached_property
+    def case_sensitive(self):
+        return re.compile("|".join(i["pattern"] for i in CRAWLER_USER_AGENTS_DATA))
+
+    @cached_property
+    def _chunks_case_sensitive(self):
+        patterns = [i["pattern"] for i in CRAWLER_USER_AGENTS_DATA]
+        return [
+            re.compile("|".join(patterns[i:i + CHUNK_SIZE]))
+            for i in range(0, len(patterns), CHUNK_SIZE)
+        ]
+
+    @cached_property
+    def _chunks_case_insensitive(self):
+        patterns = [i["pattern"].lower() for i in CRAWLER_USER_AGENTS_DATA]
+        return [
+            re.compile("|".join(patterns[i:i + CHUNK_SIZE]))
+            for i in range(0, len(patterns), CHUNK_SIZE)
+        ]
 
 
 def load_json():
@@ -11,15 +47,25 @@ def load_json():
 
 
 CRAWLER_USER_AGENTS_DATA = load_json()
+CRAWLER_PATTERNS = CrawlerPatterns()
 
 
-def is_crawler(user_agent: str) -> bool:
-    for crawler_user_agent in CRAWLER_USER_AGENTS_DATA:
-        if re.search(crawler_user_agent["pattern"], user_agent, re.IGNORECASE):
-            return True
-    return False
+def is_crawler(user_agent: str, case_sensitive: bool = True) -> bool:
+    """Return True if the given User-Agent matches a known crawler."""
+    if case_sensitive:
+        return any(p.search(user_agent) for p in CRAWLER_PATTERNS._chunks_case_sensitive)
+    ua = user_agent.lower()
+    return any(p.search(ua) for p in CRAWLER_PATTERNS._chunks_case_insensitive)
 
 
-def is_crawler2(s):
-    regexp = re.compile("|".join([i["pattern"] for i in CRAWLER_USER_AGENTS_DATA]))
-    return regexp.search(s) is not None
+def matching_crawlers(user_agent: str, case_sensitive: bool = True) -> list[int]:
+    """
+    Return a list of the indices in CRAWLER_USER_AGENTS_DATA of any crawlers
+    matching the given User-Agent.
+    """
+    result = []
+    if is_crawler(user_agent, case_sensitive):
+        for num, crawler_user_agent in enumerate(CRAWLER_USER_AGENTS_DATA):
+            if re.search(crawler_user_agent["pattern"], user_agent, 0 if case_sensitive else re.IGNORECASE):
+                result.append(num)
+    return result
